@@ -44,6 +44,7 @@ def clientes():
         telefone = formatar_telefone(request.form["telefone"])
 
         # verificar nome e telefone cliente "duplicidade"
+
         cursor.execute(
             "SELECT COUNT(*) FROM Clientes WHERE nome = ? AND telefone = ?",
             (nome, telefone)
@@ -80,6 +81,35 @@ def excluir_cliente(id):
     conn.commit()
     flash("✅ Cliente excluído com sucesso!", "success")
     return redirect(url_for("clientes"))
+
+# pagina Barbeiros
+
+@app.route("/barbeiros", methods=["GET", "POST"])
+def barbeiros():
+    cursor = conn.cursor()
+    if request.method == "POST":
+        nome = request.form["nome"]
+        especialidade = request.form["especialidade"]
+        cursor.execute(
+            "INSERT INTO Barbeiros (nome, especialidade) VALUES (?, ?)",
+            (nome, especialidade),
+        )
+        conn.commit()
+        flash("✅ Barbeiro cadastrado com sucesso!", "success")
+        return redirect(url_for("barbeiros"))
+
+    cursor.execute("SELECT id, nome, especialidade FROM Barbeiros")
+    barbeiros = cursor.fetchall()
+    return render_template("barbeiros.html", barbeiros=barbeiros)
+
+
+@app.route("/excluir_barbeiro/<int:id>")
+def excluir_barbeiro(id):
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM Barbeiros WHERE id=?", (id,))
+    conn.commit()
+    flash("✅ Barbeiro excluído com sucesso!", "success")
+    return redirect(url_for("barbeiros"))
 
 #rum
 

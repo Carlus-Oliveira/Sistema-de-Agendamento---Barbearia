@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <title>Cadastros - Barbearia Magnus</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <nav>
         <ul>
             <li><a href="{{ url_for('index') }}">Início</a></li>
         </ul>
     </nav>
-
     <div class="container">
         <h1>Área de Cadastros</h1>
         <p style="text-align:center;">Escolha uma opção abaixo:</p>
-
         <div style="display:flex; justify-content:center; gap:20px; margin-top:20px;">
             <a href="{{ url_for('clientes') }}">
                 <button>Clientes</button>
             </a>
-            <a href="#" onclick="alert('Função ainda não disponível')">
+            <a href="{{ url_for('barbeiros') }}">
                 <button>Barbeiros</button>
             </a>
             <a href="#" onclick="alert('Função ainda não disponível')">
@@ -29,4 +29,5 @@
         </div>
     </div>
 </body>
+
 </html>

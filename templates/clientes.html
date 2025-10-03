@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <title>Clientes - Barbearia Magnus</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <nav>
         <ul>
@@ -12,11 +14,8 @@
             <li><a href="{{ url_for('cadastros') }}">Cadastros</a></li>
         </ul>
     </nav>
-
     <div class="container">
         <h1>Clientes</h1>
-
-        <!-- mensagem -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             <div class="flash-messages">
@@ -26,7 +25,6 @@
             </div>
           {% endif %}
         {% endwith %}
-
         <h2>Novo Cliente</h2>
         <form method="POST" action="{{ url_for('clientes') }}">
             <label for="nome">Nome:</label>
@@ -39,10 +37,9 @@
             <input type="email" id="email" name="email">
 
             <button type="submit">Cadastrar</button>
+
         </form>
-
         <hr>
-
         <h2>Lista de Clientes</h2>
         <table>
             <thead>
@@ -68,4 +65,5 @@
         </table>
     </div>
 </body>
+
 </html>
