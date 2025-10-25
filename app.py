@@ -111,6 +111,45 @@ def excluir_barbeiro(id):
     flash("✅ Barbeiro excluído com sucesso!", "success")
     return redirect(url_for("barbeiros"))
 
+# Serviços
+
+@app.route("/servicos", methods=["GET", "POST"])
+def servicos():
+    cursor = conn.cursor()
+    if request.method == "POST":
+        nome = request.form["nome"]
+        preco = float(request.form["preco"])  # ✅ novo campo
+        duracao_minutos = int(request.form["duracao_minutos"])
+
+        try:
+            cursor.execute(
+                "INSERT INTO Servicos (nome, preco, duracao_minutos) VALUES (?, ?, ?)",
+                (nome, preco, duracao_minutos),
+            )
+            conn.commit()
+            flash("✅ Serviço cadastrado com sucesso!", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"❌ Erro ao cadastrar serviço: {e}", "error")
+
+        return redirect(url_for("servicos"))
+
+    cursor.execute("SELECT id, nome, preco, duracao_minutos FROM Servicos")
+    servicos = cursor.fetchall()
+    return render_template("servicos.html", servicos=servicos)
+
+@app.route("/excluir_servico/<int:id>")
+def excluir_servico(id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Servicos WHERE id=?", (id,))
+        conn.commit()
+        flash("✅ Serviço excluído com sucesso!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"❌ Erro ao excluir serviço: {e}", "error")
+
+    return redirect(url_for("servicos"))
 #rum
 
 if __name__ == "__main__":
