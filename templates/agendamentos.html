@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamentos - Barbearia Magnus</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Início</a></li>
+            <li><a href="{{ url_for('cadastros') }}">Cadastros</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>Agendamentos</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flashes">
+              {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        <h2>Novo Agendamento</h2>
+        <form method="POST" action="{{ url_for('agendamentos') }}">
+            <label for="cliente_id">Cliente:</label>
+            <select id="cliente_id" name="cliente_id" required>
+                {% for c in clientes %}
+                <option value="{{ c[0] }}">{{ c[1] }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="barbeiro_id">Barbeiro:</label>
+            <select id="barbeiro_id" name="barbeiro_id" required>
+                {% for b in barbeiros %}
+                <option value="{{ b[0] }}">{{ b[1] }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="servico_id">Serviço:</label>
+            <select id="servico_id" name="servico_id" required>
+                {% for s in servicos %}
+                <option value="{{ s[0] }}">{{ s[1] }} ({{ s[2] }} min)</option>
+                {% endfor %}
+            </select>
+
+            <label for="datahora">Data e Hora:</label>
+            <input type="datetime-local" id="datahora" name="datahora" required>
+
+            <button type="submit">Agendar</button>
+        </form>
+        <hr>
+        <h2>Lista de Agendamentos</h2>
+        <form method="GET" action="{{ url_for('agendamentos') }}">
+            <label for="barbeiro_filtro">Filtrar por barbeiro:</label>
+            <select id="barbeiro_filtro" name="barbeiro_id" onchange="this.form.submit()">
+                <option value="">-- Todos --</option>
+                {% for b in barbeiros %}
+                <option value="{{ b[0] }}" {% if barbeiro_filtro and barbeiro_filtro == b[0] %}selected{% endif %}>
+                    {{ b[1] }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Barbeiro</th>
+                    <th>Serviço</th>
+                    <th>Data e Hora</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ag in agendamentos %}
+                <tr>
+                    <td>{{ ag[1] }}</td>
+                    <td>{{ ag[2] }}</td>
+                    <td>{{ ag[3] }}</td>
+                    <td>{{ ag[4] }}</td>
+                    <td>
+                        <a href="{{ url_for('excluir_agendamento', id=ag[0]) }}">Excluir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime, timedelta
 import pyodbc
 import re
 
@@ -102,7 +103,6 @@ def barbeiros():
     barbeiros = cursor.fetchall()
     return render_template("barbeiros.html", barbeiros=barbeiros)
 
-
 @app.route("/excluir_barbeiro/<int:id>")
 def excluir_barbeiro(id):
     cursor = conn.cursor()
@@ -150,6 +150,128 @@ def excluir_servico(id):
         flash(f"❌ Erro ao excluir serviço: {e}", "error")
 
     return redirect(url_for("servicos"))
+
+# Agendamentos
+
+@app.route("/agendamentos", methods=["GET", "POST"])
+def agendamentos():
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        cliente_id = request.form["cliente_id"]
+        barbeiro_id = request.form["barbeiro_id"]
+        servico_id = request.form["servico_id"]
+        datahora_str = request.form["datahora"]
+
+        try:
+
+            # Converter a data/hora do formulario
+
+            inicio = datetime.strptime(datahora_str, "%Y-%m-%dT%H:%M")
+
+            # Bloquear agendamento em datas passadas
+
+            if inicio < datetime.now():
+                flash("❌ Não é permitido agendar em datas/horários passados.", "error")
+                return redirect(url_for("agendamentos"))
+
+            # Buscar duração do serviço
+
+            cursor.execute("SELECT duracao_minutos FROM Servicos WHERE id=?", (servico_id,))
+            servico = cursor.fetchone()
+            if not servico:
+                flash("❌ Serviço não encontrado.", "error")
+                return redirect(url_for("agendamentos"))
+
+            duracao = servico[0]
+            fim = inicio + timedelta(minutes=duracao)
+
+            # conflito de horario
+
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM Agendamentos A
+                JOIN Servicos S ON A.servico_id = S.id
+                WHERE A.barbeiro_id = ?
+                AND (
+                    (A.data_hora <= ? AND DATEADD(MINUTE, S.duracao_minutos, A.data_hora) > ?)
+                    OR
+                    (A.data_hora < ? AND DATEADD(MINUTE, S.duracao_minutos, A.data_hora) >= ?)
+                    OR
+                    (A.data_hora >= ? AND A.data_hora < ?)
+                )
+            """, (barbeiro_id, inicio, inicio, fim, fim, inicio, fim))
+
+            conflito = cursor.fetchone()[0]
+            if conflito > 0:
+                flash("❌ Esse barbeiro já possui um agendamento nesse horário.", "error")
+                return redirect(url_for("agendamentos"))
+
+            # Inserir agendamento
+
+            cursor.execute("""
+                INSERT INTO Agendamentos (cliente_id, barbeiro_id, servico_id, data_hora)
+                VALUES (?, ?, ?, ?)
+            """, (cliente_id, barbeiro_id, servico_id, inicio.strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+            flash("✅ Agendamento criado com sucesso!", "success")
+            return redirect(url_for("agendamentos"))
+
+        except Exception as e:
+            conn.rollback()
+            flash(f"❌ Erro ao cadastrar agendamento: {e}", "error")
+            return redirect(url_for("agendamentos"))
+
+    # GET: Listagem de agendamentos
+
+    barbeiro_filtro = request.args.get("barbeiro_id")
+
+    query = """
+        SELECT A.id, C.nome, B.nome, S.nome, A.data_hora
+        FROM Agendamentos A
+        JOIN Clientes C ON A.cliente_id = C.id
+        JOIN Barbeiros B ON A.barbeiro_id = B.id
+        JOIN Servicos S ON A.servico_id = S.id
+    """
+    params = []
+
+    if barbeiro_filtro and barbeiro_filtro.strip():
+        query += " WHERE A.barbeiro_id = ?"
+        params.append(int(barbeiro_filtro))
+
+    query += " ORDER BY A.data_hora"
+
+    cursor.execute(query, params)
+    agendamentos = cursor.fetchall()
+
+    # busca banco de dados
+
+    cursor.execute("SELECT id, nome FROM Clientes")
+    clientes = cursor.fetchall()
+
+    cursor.execute("SELECT id, nome FROM Barbeiros")
+    barbeiros = cursor.fetchall()
+
+    cursor.execute("SELECT id, nome, duracao_minutos FROM Servicos")
+    servicos = cursor.fetchall()
+
+    return render_template(
+        "agendamentos.html",
+        agendamentos=agendamentos,
+        clientes=clientes,
+        barbeiros=barbeiros,
+        servicos=servicos,
+        barbeiro_filtro=int(barbeiro_filtro) if barbeiro_filtro and barbeiro_filtro.strip() else None
+    )
+
+@app.route("/excluir_agendamento/<int:id>")
+def excluir_agendamento(id):
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM Agendamentos WHERE id=?", (id,))
+    conn.commit()
+    flash("✅ Agendamento excluído com sucesso!", "success")
+    return redirect(url_for("agendamentos"))
+
 #rum
 
 if __name__ == "__main__":
